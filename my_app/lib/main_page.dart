@@ -2,6 +2,25 @@
 
 import 'package:flutter/material.dart';
 
+Center mybutton(context, String pagestr, String text, double wid) {
+  return Center(
+    child: ElevatedButton(
+      onPressed: () {
+        Navigator.pushNamed(context, pagestr);
+      },
+      child: SizedBox(
+          height: 40,
+          width: wid,
+          child: Center(
+            child: Text(
+              text,
+              style: TextStyle(fontFamily: "Times New Roman", fontSize: 20),
+            ),
+          )),
+    ),
+  );
+}
+
 class Screen extends StatefulWidget {
   const Screen({super.key});
 
@@ -23,29 +42,13 @@ class _ScreenState extends State<Screen> {
           ),
         ),
         body: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             SizedBox(
               height: 10,
             ),
-            Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, "/acc");
-                },
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 20),
-                  height: 40,
-                  width: 150,
-                  alignment: Alignment.center,
-                  child: Text(
-                    "Acceleration",
-                    style:
-                        TextStyle(fontFamily: "Times New Roman", fontSize: 20),
-                  ),
-                ),
-              ),
-            ),
+            mybutton(context, "/acc", "Acceleration", 150),
+            mybutton(context, "/genshin", "Genshin", 120),
+            mybutton(context, "/blue", "Blue", 100),
           ],
         ),
       ),

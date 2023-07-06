@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'acceleration.dart';
 import 'main_page.dart';
+import 'genshin.dart';
+import 'blue.dart';
 
 void main() => runApp(Myapp()); //从这个main widget开始(all application)
 
@@ -22,6 +24,8 @@ class _MyappState extends State<Myapp> {
       routes: {
         "/main": (context) => Screen(),
         '/acc': (context) => acc_page(),
+        '/genshin': (context) => genshin(),
+        '/blue': (context) => Blue(),
       },
       theme: ThemeData(colorScheme: ColorScheme.light()),
       initialRoute: "/main",
