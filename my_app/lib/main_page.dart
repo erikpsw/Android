@@ -48,7 +48,6 @@ class _ScreenState extends State<Screen> {
             ),
             mybutton(context, "/acc", "Acceleration", 150),
             mybutton(context, "/genshin", "Genshin", 120),
-            mybutton(context, "/blue", "Blue", 100),
           ],
         ),
       ),
