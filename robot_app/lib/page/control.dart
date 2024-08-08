@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:convert';
+import 'package:provider/provider.dart';
+import 'control_model.dart';
 
 void main() {
   runApp(const MaterialApp(home: PhysicsCardDragDemo()));
 }
 
-Offset currentPosition = Offset.zero;
 double strength = 1.0;
+double angle2 = 0.0;
 
 class PhysicsCardDragDemo extends StatelessWidget {
   const PhysicsCardDragDemo({super.key});
@@ -32,13 +34,15 @@ class PhysicsCardDragDemo extends StatelessWidget {
             bottom: 20,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [ClearButton()],
+              children: [AngleSlider2(), ClearButton()],
             ),
           ),
           Positioned(
-            top: 20,
-            left: 20,
-            child: WebSocketPage(),
+            right: 20,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [AngleSlider()],
+            ),
           ),
         ],
       ),
@@ -117,24 +121,23 @@ class _DraggableCardState extends State<DraggableCard>
     final size = MediaQuery.of(context).size;
     final webSocketPageState =
         context.findAncestorStateOfType<WebSocketPageState>();
+    Offset currentPosition = context.watch<ContralModel>().currentPosition;
+
     return GestureDetector(
       onPanDown: (details) {
         _controller.stop();
       },
       onPanUpdate: (details) {
-        setState(() {
-          _dragAlignment += Alignment(
-            details.delta.dx / (size.width / 2),
-            details.delta.dy / (size.height / 2),
-          );
-          currentPosition += details.delta * strength;
-          if (webSocketPageState != null) {
-            webSocketPageState.sendCoordinates(
-                currentPosition.dx, currentPosition.dy);
-          } else {
-            print("null");
-          }
-        });
+        _dragAlignment += Alignment(
+          details.delta.dx / (size.width / 2),
+          details.delta.dy / (size.height / 2),
+        );
+        currentPosition += details.delta * strength;
+        context.read<ContralModel>().setcurrentPosition(currentPosition);
+        if (webSocketPageState != null) {
+          webSocketPageState.sendCoordinates(
+              currentPosition.dx, currentPosition.dy);
+        }
       },
       onPanEnd: (details) {
         _runAnimation(details.velocity.pixelsPerSecond, size);
@@ -171,18 +174,23 @@ class ClearButton extends StatefulWidget {
 }
 
 class _ClearButtonState extends State<ClearButton> {
-  void _clearPosition() {
-    setState(() {
-      currentPosition = Offset.zero;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final webSocketPageState =
+        context.findAncestorStateOfType<WebSocketPageState>();
+
     return Column(
       children: [
         ElevatedButton(
-          onPressed: _clearPosition,
+          onPressed: () {
+            context.read<ContralModel>().setcurrentPosition(Offset.zero);
+            if (webSocketPageState != null) {
+              webSocketPageState.sendPair("Reset", 1);
+              context.read<ContralModel>().setSliderValue(0.0);
+              webSocketPageState.sendPair("Angle", 0);
+              webSocketPageState.sendCoordinates(0, 0);
+            }
+          },
           child: const Text('Clear Position'),
         ),
         const SizedBox(height: 30)
@@ -231,8 +239,93 @@ class _StrengthSliderState extends State<StrengthSlider> {
   }
 }
 
+class AngleSlider2 extends StatefulWidget {
+  const AngleSlider2({super.key});
+
+  @override
+  State<AngleSlider2> createState() => _AngleSlider2State();
+}
+
+class _AngleSlider2State extends State<AngleSlider2> {
+  @override
+  Widget build(BuildContext context) {
+    final webSocketPageState =
+        context.findAncestorStateOfType<WebSocketPageState>();
+    return Column(
+      children: [
+        Text('Angle2: ${angle2.toStringAsFixed(1)}'),
+        SizedBox(
+          width: 400,
+          child: Slider(
+            value: angle2,
+            min: -180,
+            max: 180,
+            divisions: 360,
+            label: angle2.toStringAsFixed(1),
+            onChanged: (value) {
+              setState(() {
+                angle2 = value;
+                if (webSocketPageState != null) {
+                  webSocketPageState.sendPair("Angle2", value);
+                }
+              });
+            },
+            onChangeEnd: (value) {},
+          ),
+        )
+      ],
+    );
+  }
+}
+
+class AngleSlider extends StatefulWidget {
+  const AngleSlider({super.key});
+
+  @override
+  State<AngleSlider> createState() => _AngleSliderState();
+}
+
+class _AngleSliderState extends State<AngleSlider> {
+  @override
+  Widget build(BuildContext context) {
+    final webSocketPageState =
+        context.findAncestorStateOfType<WebSocketPageState>();
+    double angle = context.watch<ContralModel>().sliderValue;
+
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 400, // 增加滑动条的长度
+          child: RotatedBox(
+            quarterTurns: 1, // 将滑动条旋转90度
+            child: Slider(
+              value: angle,
+              min: -180,
+              max: 180,
+              divisions: 360,
+              // 移除label属性，不显示value指示器
+              onChanged: (value) {
+                context.read<ContralModel>().setSliderValue(value);
+                if (webSocketPageState != null) {
+                  webSocketPageState.sendPair("Angle", value);
+                }
+              },
+              onChangeEnd: (value) {
+                // 可以在这里执行其他操作
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class WebSocketPage extends StatefulWidget {
-  const WebSocketPage({super.key});
+  final String ip;
+
+  const WebSocketPage({super.key, required this.ip});
 
   @override
   WebSocketPageState createState() => WebSocketPageState();
@@ -246,11 +339,18 @@ class WebSocketPageState extends State<WebSocketPage> {
   void initState() {
     super.initState();
     // 使用计算机的 IP 地址
-    channel = WebSocketChannel.connect(Uri.parse('ws://192.168.0.102:8765'));
+    channel = WebSocketChannel.connect(Uri.parse('ws://${widget.ip}:8765'));
   }
 
   void sendCoordinates(double x, double y) {
     final coordinates = jsonEncode({'x': x, 'y': y});
+    channel.sink.add(coordinates);
+  }
+
+  void sendPair(String x, double y) {
+    final coordinates = jsonEncode({
+      x: y,
+    });
     channel.sink.add(coordinates);
   }
 
@@ -263,16 +363,9 @@ class WebSocketPageState extends State<WebSocketPage> {
   @override
   Widget build(BuildContext context) {
     // 如果不需要展示UI，这里可以返回一个空容器或者其他占位组件
-    return
-        // StreamBuilder(
-        //   stream: channel.stream,
-        //   builder: (context, snapshot) {
-        //     if (snapshot.hasData) {
-        //       message = snapshot.data.toString();
-        //     }
-        //     return Text(message);
-        //   },
-        // );
-        Container();
+    return ChangeNotifierProvider(
+      create: (context) => ContralModel(),
+      child: const PhysicsCardDragDemo(),
+    );
   }
 }

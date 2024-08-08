@@ -90,6 +90,8 @@ class MyHomePageState extends State<MyHomePage> {
   }
 }
 
+String ip = "192.168.0.102";
+
 class NewPage extends StatelessWidget {
   const NewPage({super.key});
 
@@ -102,10 +104,16 @@ class NewPage extends StatelessWidget {
           children: [
             ElevatedButton(
               onPressed: () {
+                _showSetIpDialog(context);
+              },
+              child: const Text('Set IP'),
+            ),
+            ElevatedButton(
+              onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const PhysicsCardDragDemo(),
+                    builder: (context) => WebSocketPage(ip: ip),
                   ),
                 );
               },
@@ -116,4 +124,34 @@ class NewPage extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showSetIpDialog(BuildContext context) {
+  TextEditingController ipController = TextEditingController(text: ip);
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Set IP Address'),
+        content: TextField(
+          controller: ipController,
+          decoration: const InputDecoration(hintText: "Enter IP Address"),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('OK'),
+            onPressed: () {
+              // Handle IP address update logic here
+              ip = ipController.text;
+              print("New IP Address: $ip");
+
+              // Close the dialog
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
 }
