@@ -6,16 +6,16 @@ import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class AccPage extends StatefulWidget {
-  const AccPage({super.key});
+class GyroPage extends StatefulWidget {
+  const GyroPage({super.key});
 
   @override
-  State<AccPage> createState() => AccPageState();
+  State<GyroPage> createState() => GyroPageState();
 }
 
-class AccPageState extends State<AccPage> {
-  List<double> acc = [0.00, 0.00, 0.00];
-  late StreamSubscription<UserAccelerometerEvent> _streamSubscription;
+class GyroPageState extends State<GyroPage> {
+  List<double> gyro = [0.00, 0.00, 0.00];
+  late StreamSubscription<GyroscopeEvent> _streamSubscription;
   List<List<dynamic>> csvData = [
     <String>['Timestamp', 'X', 'Y', 'Z'],
   ];
@@ -32,11 +32,14 @@ class AccPageState extends State<AccPage> {
   void initState() {
     super.initState();
 
-    _streamSubscription = userAccelerometerEventStream().listen(
-      (UserAccelerometerEvent event) {
+    _streamSubscription =
+        //https://blog.csdn.net/kissgoodbye2012/article/details/107589966
+        gyroscopeEventStream(samplingPeriod: SensorInterval.gameInterval)
+            .listen(
+      (GyroscopeEvent event) {
         setState(
           () {
-            acc = <double>[event.x, event.y, event.z];
+            gyro = <double>[event.x, event.y, event.z];
           },
         );
         // print(light0);
@@ -95,13 +98,13 @@ class AccPageState extends State<AccPage> {
 
   Future<void> _saveDataToCsv() async {
     final DateTime now = DateTime.now();
-    final List<dynamic> row = [now.toString(), acc[0], acc[1], acc[2]];
+    final List<dynamic> row = [now.toString(), gyro[0], gyro[1], gyro[2]];
     csvData.add(row);
 
     String csv = const ListToCsvConverter().convert(csvData);
 
     final String directory = (await getExternalStorageDirectory())!.path;
-    final path = "$directory/accelerometer_data.csv";
+    final path = "$directory/gyroscope_data.csv";
 
     final File file = File(path);
     await file.writeAsString(csv);
@@ -145,13 +148,13 @@ class AccPageState extends State<AccPage> {
             late String text;
             switch (segment.value) {
               case 'x':
-                text = "a${segment.value} = ${acc[0].toStringAsFixed(2)}";
+                text = "a${segment.value} = ${gyro[0].toStringAsFixed(2)}";
                 break;
               case 'y':
-                text = "a${segment.value} = ${acc[1].toStringAsFixed(2)}";
+                text = "a${segment.value} = ${gyro[1].toStringAsFixed(2)}";
                 break;
               case 'z':
-                text = "a${segment.value} = ${acc[2].toStringAsFixed(2)}";
+                text = "a${segment.value} = ${gyro[2].toStringAsFixed(2)}";
                 break;
               default:
                 text = segment.label.toString();

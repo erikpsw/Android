@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'page/acceleration.dart';
+import 'page/gyroscope.dart';
 import 'page/blue.dart';
+import 'page/control.dart';
 
 void main() {
   runApp(const MyApp());
@@ -29,10 +30,9 @@ class MyHomePageState extends State<MyHomePage> {
   final PageController _pageController = PageController();
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      _pageController.jumpToPage(index);
-    });
+    _pageController.jumpToPage(
+      index,
+    );
   }
 
   @override
@@ -58,17 +58,10 @@ class MyHomePageState extends State<MyHomePage> {
               ),
             ),
           ),
-          const AccPage(), // 你的加速度页面
+          // WebSocketPage(),
+          const GyroPage(), // 你的加速度页面
           const HomeScreen(),
-          Container(
-            color: Colors.yellow,
-            child: const Center(
-              child: Text(
-                'Settings',
-                style: TextStyle(fontSize: 24, color: Colors.white),
-              ),
-            ),
-          ),
+          const NewPage(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -81,7 +74,7 @@ class MyHomePageState extends State<MyHomePage> {
           ),
           NavigationDestination(
             icon: Icon(Icons.explore),
-            label: 'Acceleration',
+            label: 'Gyroscope',
           ),
           NavigationDestination(
             icon: Icon(Icons.person),
@@ -95,4 +88,70 @@ class MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+}
+
+String ip = "192.168.0.102";
+
+class NewPage extends StatelessWidget {
+  const NewPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                _showSetIpDialog(context);
+              },
+              child: const Text('Set IP'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => WebSocketPage(ip: ip),
+                  ),
+                );
+              },
+              child: const Text('Start Control'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void _showSetIpDialog(BuildContext context) {
+  TextEditingController ipController = TextEditingController(text: ip);
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Set IP Address'),
+        content: TextField(
+          controller: ipController,
+          decoration: const InputDecoration(hintText: "Enter IP Address"),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('OK'),
+            onPressed: () {
+              // Handle IP address update logic here
+              ip = ipController.text;
+              print("New IP Address: $ip");
+
+              // Close the dialog
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
 }
